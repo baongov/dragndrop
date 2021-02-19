@@ -1,0 +1,122 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders learn react link Renders link to Google 1`] = `
+<styled.div
+  className="App"
+>
+  <div>
+    Selected position: 
+    [-1,-1]
+  </div>
+  <div>
+    Hovered position: 
+    [-1,-1]
+  </div>
+  <div>
+    Dragged position: 
+    [-1,-1]
+  </div>
+  <div>
+    <div
+      key="0"
+    >
+      <styled.div
+        data-position={
+          Array [
+            0,
+            0,
+          ]
+        }
+        draggable={true}
+        h={0}
+        isDraggerOn={false}
+        isSelected={false}
+        key="0"
+        l={10}
+        onClick={[Function]}
+        onDragEnd={[Function]}
+        onDragEnter={[Function]}
+        onDragOver={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        s={80}
+        x={100}
+        y={100}
+      />
+      <styled.div
+        data-position={
+          Array [
+            0,
+            1,
+          ]
+        }
+        draggable={true}
+        h={0}
+        isDraggerOn={false}
+        isSelected={false}
+        key="1"
+        l={90}
+        onClick={[Function]}
+        onDragEnd={[Function]}
+        onDragEnter={[Function]}
+        onDragOver={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        s={80}
+        x={100}
+        y={150}
+      />
+    </div>
+    <div
+      key="1"
+    >
+      <styled.div
+        data-position={
+          Array [
+            1,
+            0,
+          ]
+        }
+        draggable={true}
+        h={320}
+        isDraggerOn={false}
+        isSelected={false}
+        key="0"
+        l={10}
+        onClick={[Function]}
+        onDragEnd={[Function]}
+        onDragEnter={[Function]}
+        onDragOver={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        s={80}
+        x={150}
+        y={100}
+      />
+      <styled.div
+        data-position={
+          Array [
+            1,
+            1,
+          ]
+        }
+        draggable={true}
+        h={320}
+        isDraggerOn={false}
+        isSelected={false}
+        key="1"
+        l={90}
+        onClick={[Function]}
+        onDragEnd={[Function]}
+        onDragEnter={[Function]}
+        onDragOver={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        s={80}
+        x={150}
+        y={150}
+      />
+    </div>
+  </div>
+</styled.div>
+`;
