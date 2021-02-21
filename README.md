@@ -1,6 +1,6 @@
 # Colorland
 
-Drap and drop movement
+Dra and drop movement
 
 ## Requirements
 
