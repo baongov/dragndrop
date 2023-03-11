@@ -1,4 +1,5 @@
 const path = require("path");
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: "./src/index.tsx",
@@ -8,7 +9,6 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js',
-    publicPath: '/dist/',
   },
   module: {
     rules: [
@@ -23,8 +23,15 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: './public/index.html', to: './index.html' },
+      ],
+    }),
+  ],
   devServer: {
-    static: path.join(__dirname, "public"),
+    static: path.join(__dirname, "dist"),
     port: 3000,
     hot: true,
   },
