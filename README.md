@@ -1,10 +1,10 @@
 # Colorland
 
-Dra and drop movement
+Drag and drop movement
 
 ## Requirements
 
-- Node v12+
+- Node v19+
 
 ## Installing
 

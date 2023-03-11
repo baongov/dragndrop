@@ -5,23 +5,27 @@ module.exports = {
   resolve: {
     extensions: [".ts", ".tsx", ".js"],
   },
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'main.js',
+    publicPath: '/dist/',
+  },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: "ts-loader",
-        exclude: "/node_modules/",
+        exclude: /node_modules/,
       },
       {
-        test: /\.css$/,
+        test: /\.css$/i,
         use: ["style-loader", "css-loader"],
       },
     ],
   },
   devServer: {
-    contentBase: path.join(__dirname, "public"),
+    static: path.join(__dirname, "public"),
     port: 3000,
-    publicPath: "http://localhost:3000/dist/",
-    hotOnly: true,
+    hot: true,
   },
 };
