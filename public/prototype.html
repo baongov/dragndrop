@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Form Logic Review Tool — Prototype</title>
+<style>
+  :root {
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --accent: #4f46e5;
+    --code-bg: #f6f8fa;
+
+    /* Tag palette — color-coded by category (Enhancement #1) */
+    /* Execution type: solid badges */
+    --tag-ai-bg: #4f46e5;       --tag-ai-fg: #ffffff;
+    --tag-det-bg: #475569;      --tag-det-fg: #ffffff;
+    /* Source of truth: light tinted backgrounds */
+    --tag-common-bg: #dcfce7;   --tag-common-fg: #166534;   --tag-common-bd: #86efac;
+    --tag-nl-bg: #dbeafe;       --tag-nl-fg: #1e40af;       --tag-nl-bd: #93c5fd;
+    --tag-blueprint-bg: #ede9fe;--tag-blueprint-fg: #5b21b6;--tag-blueprint-bd: #c4b5fd;
+    /* Gen tools: orange / teal variants */
+    --tag-crtool-bg: #ffedd5;   --tag-crtool-fg: #9a3412;   --tag-crtool-bd: #fdba74;
+    --tag-bptool-bg: #ccfbf1;   --tag-bptool-fg: #115e59;   --tag-bptool-bd: #5eead4;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    height: 100vh;
+  }
+
+  /* ───────────── Left: rule list ───────────── */
+  .list-panel {
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .list-header {
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    z-index: 2;
+  }
+  .list-header h1 { font-size: 15px; margin: 0 0 2px; }
+  .list-header p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+  .rule-row {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .rule-row:hover { background: #f1f5f9; }
+  .rule-row.active { background: #eef2ff; box-shadow: inset 3px 0 0 var(--accent); }
+  .rule-idx {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-size: 13px;
+    padding-top: 1px;
+  }
+  .rule-name {
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    word-break: break-word;
+    margin-bottom: 3px;
+  }
+  .rule-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+    word-break: break-word;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  /* ───────────── Tag chips ───────────── */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    letter-spacing: .01em;
+  }
+  .tag .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .85; }
+  .tag-ai        { background: var(--tag-ai-bg);  color: var(--tag-ai-fg); }
+  .tag-det       { background: var(--tag-det-bg); color: var(--tag-det-fg); }
+  .tag-common    { background: var(--tag-common-bg);    color: var(--tag-common-fg);    border-color: var(--tag-common-bd); }
+  .tag-nl        { background: var(--tag-nl-bg);        color: var(--tag-nl-fg);        border-color: var(--tag-nl-bd); }
+  .tag-blueprint { background: var(--tag-blueprint-bg); color: var(--tag-blueprint-fg); border-color: var(--tag-blueprint-bd); }
+  .tag-crtool    { background: var(--tag-crtool-bg);    color: var(--tag-crtool-fg);    border-color: var(--tag-crtool-bd); }
+  .tag-bptool    { background: var(--tag-bptool-bg);    color: var(--tag-bptool-fg);    border-color: var(--tag-bptool-bd); }
+
+  /* ───────────── Right: review panel ───────────── */
+  .review-panel { overflow-y: auto; padding: 28px 36px; }
+  .review-inner { max-width: 860px; }
+  .review-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .review-title .num { color: var(--text-muted); font-weight: 600; }
+  .review-title code {
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 18px;
+  }
+
+  /* Rule description brought into the review panel (Enhancement #2) */
+  .review-desc {
+    margin: 0 0 18px;
+    color: #334155;
+    font-size: 14px;
+    border-left: 3px solid var(--border-strong);
+    padding: 2px 0 2px 12px;
+  }
+
+  .review-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Code block with subtle background contrast (Enhancement #4) */
+  .code-card {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 26px;
+    overflow: hidden;
+  }
+  .code-card pre {
+    margin: 0;
+    padding: 16px 18px;
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #24292f;
+    white-space: pre-wrap;       /* wrap without breaking syntax readability */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    counter-reset: line;
+  }
+  .code-card .ln {
+    display: block;
+    padding-left: 42px;
+    position: relative;
+    text-indent: 0;
+  }
+  .code-card .ln::before {
+    counter-increment: line;
+    content: counter(line);
+    position: absolute;
+    left: 0;
+    width: 30px;
+    text-align: right;
+    color: #b6bcc4;
+    user-select: none;
+  }
+  /* continuation lines (wrapped) keep alignment via the left padding */
+  .tok-kw  { color: #cf222e; }
+  .tok-fn  { color: #6639ba; }
+  .tok-str { color: #0a3069; }
+  .tok-var { color: #0550ae; }
+  .tok-com { color: #6e7781; font-style: italic; }
+
+  /* Reason block */
+  .reason-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: var(--panel);
+  }
+  .reason-card .src-list { margin: 10px 0 0; padding: 0; list-style: none; }
+  .src-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .src-item:first-child { border-top: none; }
+  .src-item .tag { flex: 0 0 auto; margin-top: 1px; }
+  .src-body { flex: 1 1 auto; min-width: 0; }
+  .src-detail { color: #334155; }
+
+  /* Clickable blueprint line reference */
+  .bp-line {
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .bp-line:hover { text-decoration: underline; }
+  .bp-line .chev { font-size: 10px; transition: transform .15s ease; }
+  .bp-line[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .bp-content {
+    margin: 8px 0 2px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #24292f;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .bp-content .cap {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .bp-content[hidden] { display: none; }
+
+  .llm-flag {
+    margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .llm-flag.yes { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+  .llm-flag.no  { background: #f8fafc; color: #475569; border: 1px solid var(--border); }
+  .llm-flag .ico { font-size: 14px; }
+
+  .hint { color: var(--text-muted); font-size: 12px; margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Left: ordered rule list (mirrors Form Builder logic tab order) -->
+  <aside class="list-panel">
+    <div class="list-header">
+      <h1>Form Logic Review</h1>
+      <p>Generated rules in Form Builder order — click a rule to review</p>
+    </div>
+    <div id="ruleList"></div>
+  </aside>
+
+  <!-- Right: review detail -->
+  <main class="review-panel">
+    <div class="review-inner" id="reviewPanel"></div>
+  </main>
+</div>
+
+<script>
+  // Tag taxonomy ------------------------------------------------------------
+  // category -> css class + label rendering
+  const TAG_META = {
+    ai:        { cls: "tag-ai",        label: "AI" },
+    det:       { cls: "tag-det",       label: "Deterministic" },
+    common:    { cls: "tag-common",    label: "Common Rule" },
+    nl:        { cls: "tag-nl",        label: "Natural Language Rule" },
+    blueprint: { cls: "tag-blueprint", label: "Blueprint Rule" },
+    crtool:    { cls: "tag-crtool",    label: "Common Rule Gen Tool" },
+    bptool:    { cls: "tag-bptool",    label: "Blueprint Gen Tool" },
+  };
+
+  // Sample rules ------------------------------------------------------------
+  const RULES = [
+    {
+      name: "nl_prefill_entity_name_from_main_form",
+      sub: "Prefill the entity legal name from the main subscription form.",
+      desc: "Pre-populates the investing entity's legal name on this form by copying the value already captured on the main subscription form, so investors don't re-type it.",
+      tags: ["ai", "common"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">asa_fullname_investorname_generality</span>, <span class="tok-var">gr_investment_entity_fu</span>) {' },
+        { t: '  <span class="tok-kw">local</span> _ = <span class="tok-kw">import</span> <span class="tok-str">"mixcalc_v4"</span>;' },
+        { t: '  <span class="tok-kw">local</span> <span class="tok-var">logic</span> = <span class="tok-var">gr_investment_entity_fu</span>;' },
+        { t: '  _.<span class="tok-fn">fillValue</span>(<span class="tok-var">gr_investment_entity_fu_setup</span>.value, condition =' },
+        { t: '    <span class="tok-var">gr_investment_entity_fu_setup</span>.value != <span class="tok-str">""</span>)' },
+        { t: '    .<span class="tok-fn">apply</span>(<span class="tok-var">logic</span>, <span class="tok-var">asa_fullname_investorname_generality</span>, ctx =' },
+        { t: '      <span class="tok-var">asa_fullname_investorname_generality</span>)' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "common", detail: "Prefill full name — copies the investor's full legal name from the most recent matching source field into the target when the target is empty." },
+        { type: "nl", line: 100, content: "when the main form entity name is provided\n  then prefill this entity name with the same value" },
+        { type: "blueprint", line: 200, content: "map(asa_fullname_investorname_generality)\n  -> gr_investment_entity_fu_setup.value" },
+      ],
+      llm: true,
+    },
+    {
+      name: "[Validate All Req] Rule 1",
+      sub: "Require all mandatory identity fields before submission.",
+      desc: "Blocks form submission until every mandatory identity field on the entity section is filled, surfacing inline errors on the offending fields.",
+      tags: ["ai", "nl"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">required_fields</span>) {' },
+        { t: '  <span class="tok-kw">return</span> <span class="tok-var">required_fields</span>.<span class="tok-fn">every</span>(<span class="tok-var">f</span> =&gt; <span class="tok-var">f</span>.value != <span class="tok-str">""</span>);' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "nl", line: 42, content: "all identity fields in the entity section are required\n  before the form can be submitted" },
+      ],
+      llm: true,
+    },
+    {
+      name: "[Conditional Activate] Rule 4",
+      sub: "Show the tax-residency block only for non-US persons.",
+      desc: "Activates (shows + enables) the tax-residency block when the investor indicates a non-US tax status, and hides it otherwise.",
+      tags: ["det", "crtool", "common"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">us_person</span>, <span class="tok-var">tax_block</span>) {' },
+        { t: '  <span class="tok-var">tax_block</span>.active = <span class="tok-var">us_person</span>.value == <span class="tok-str">"no"</span>;' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "common", detail: "Conditional activate — shows and enables a target block only while the controlling answer matches the configured condition; hides it otherwise." },
+      ],
+      llm: false,
+    },
+    {
+      name: "[Blueprint][Single Target] enrich Identifier?",
+      sub: "Applied Targets: blahblah0Pdf",
+      desc: "Enriches the single mapped PDF target with the resolved investor identifier produced by the blueprint mapping step.",
+      tags: ["det", "bptool", "blueprint"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">identifier</span>, <span class="tok-var">target</span>) {' },
+        { t: '  <span class="tok-var">target</span>.value = <span class="tok-var">identifier</span>.<span class="tok-fn">resolve</span>();' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "blueprint", line: 310, content: "enrich(target: blahblah0Pdf)\n  with identifier.resolve()" },
+      ],
+      llm: false,
+    },
+    {
+      name: "usersonnotspecified_usperson_entity_crs",
+      sub: "Non-specified U.S. person (merges catala show + Part1 FieldBelow hide).",
+      desc: "Handles the non-specified U.S.-person case by merging two behaviors: showing the catala disclosure and hiding the dependent Part 1 field below it.",
+      tags: ["ai", "common", "bptool"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">us_person</span>, <span class="tok-var">catala</span>, <span class="tok-var">part1_below</span>) {' },
+        { t: '  <span class="tok-var">catala</span>.visible = <span class="tok-var">us_person</span>.value == <span class="tok-str">"unspecified"</span>;' },
+        { t: '  <span class="tok-var">part1_below</span>.visible = !<span class="tok-var">catala</span>.visible;' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "common", detail: "US-person disclosure — toggles the catala disclosure and the dependent Part 1 field for the unspecified US-person status." },
+        { type: "blueprint", line: 205, content: "show(catala) when us_person == \"unspecified\"\nhide(part1_below) when catala is visible" },
+      ],
+      llm: true,
+    },
+    {
+      name: "[Aggregated] share_xxx_blr_specform_entity_qax",
+      sub: "Aggregates share allocation across linked entity forms.",
+      desc: "Aggregates the share-allocation values from each linked entity form into a single rolled-up total used downstream.",
+      tags: ["det", "crtool", "common"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">forms</span>) {' },
+        { t: '  <span class="tok-kw">return</span> <span class="tok-var">forms</span>.<span class="tok-fn">reduce</span>((<span class="tok-var">a</span>, <span class="tok-var">f</span>) =&gt; <span class="tok-var">a</span> + <span class="tok-var">f</span>.share, 0);' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "common", detail: "Aggregation — rolls up a numeric field (share allocation) across all linked entity forms into a single total." },
+      ],
+      llm: false,
+    },
+    {
+      name: "is_financial_institution",
+      sub: "[blueprintTemplateId: is_financial_institution][widgetType: Radio]",
+      desc: "Drives the 'is financial institution' radio answer and the conditional fields that depend on it, mapped from the blueprint template.",
+      tags: ["det", "bptool", "blueprint"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">answer</span>, <span class="tok-var">fi_section</span>) {' },
+        { t: '  <span class="tok-var">fi_section</span>.active = <span class="tok-var">answer</span>.value == <span class="tok-str">"yes"</span>;' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "blueprint", line: 88, content: "widget(is_financial_institution, type: Radio)\n  activates fi_section when answer == \"yes\"" },
+      ],
+      llm: false,
+    },
+    {
+      name: "[Validate All Req] Rule 6",
+      sub: "Cross-field validation for the financial-institution answer.",
+      desc: "Validates that, when the investor is a financial institution, all the institution-specific required fields are completed before submission.",
+      tags: ["ai", "common", "bptool"],
+      code: [
+        { t: '<span class="tok-kw">function</span>(<span class="tok-var">is_fi</span>, <span class="tok-var">fi_fields</span>) {' },
+        { t: '  <span class="tok-kw">if</span> (!<span class="tok-var">is_fi</span>.value) <span class="tok-kw">return</span> <span class="tok-kw">true</span>;' },
+        { t: '  <span class="tok-kw">return</span> <span class="tok-var">fi_fields</span>.<span class="tok-fn">every</span>(<span class="tok-var">f</span> =&gt; <span class="tok-var">f</span>.value != <span class="tok-str">""</span>);' },
+        { t: '}' },
+      ],
+      sources: [
+        { type: "common", detail: "Validate all required — when the gating condition is true, every listed field must be non-empty before submission." },
+        { type: "blueprint", line: 120, content: "when is_financial_institution == true\n  require all fi_fields to be filled" },
+      ],
+      llm: true,
+    },
+  ];
+
+  // Rendering ---------------------------------------------------------------
+  function tagChip(cat) {
+    const m = TAG_META[cat];
+    return `<span class="tag ${m.cls}"><span class="dot"></span>${m.label}</span>`;
+  }
+
+  // A source of truth = its type (rendered as the matching tag) + a detail.
+  //  - common rule       -> show the common rule's description
+  //  - blueprint / NL     -> show a clickable Blueprint line; clicking surfaces
+  //                          the logic content extracted from the Blueprint.
+  function renderSource(s, si) {
+    const type = tagChip(s.type);
+    if (s.type === "common") {
+      return `<li class="src-item">${type}<div class="src-body"><span class="src-detail">${s.detail}</span></div></li>`;
+    }
+    return `
+      <li class="src-item">
+        ${type}
+        <div class="src-body">
+          <button class="bp-line" data-src="${si}" aria-expanded="false">
+            <span class="chev">▶</span>Blueprint line ${s.line}
+          </button>
+          <pre class="bp-content" id="bp-${si}" hidden><span class="cap">Extracted from Blueprint · line ${s.line}</span>${s.content}</pre>
+        </div>
+      </li>`;
+  }
+
+  function renderList() {
+    const el = document.getElementById("ruleList");
+    el.innerHTML = RULES.map((r, i) => `
+      <div class="rule-row" data-idx="${i}">
+        <div class="rule-idx">${i + 1}</div>
+        <div>
+          <div class="rule-name">${r.name}</div>
+          <div class="rule-sub">${r.sub}</div>
+          <div class="tags">${r.tags.map(tagChip).join("")}</div>
+        </div>
+      </div>
+    `).join("");
+    el.querySelectorAll(".rule-row").forEach(row => {
+      row.addEventListener("click", () => select(+row.dataset.idx));
+    });
+  }
+
+  function renderReview(i) {
+    const r = RULES[i];
+    const llmCls = r.llm ? "yes" : "no";
+    const llmTxt = r.llm ? "LLM Final Touch: Yes" : "LLM Final Touch: No";
+    const llmIco = r.llm ? "✨" : "—";
+    document.getElementById("reviewPanel").innerHTML = `
+      <h2 class="review-title"><span class="num">Item #${i + 1}:</span> <code>${r.name}</code></h2>
+      <p class="review-desc">${r.desc}</p>
+      <div class="review-tags">${r.tags.map(tagChip).join("")}</div>
+
+      <div class="code-card">
+        <pre>${r.code.map(l => `<span class="ln">${l.t}</span>`).join("")}</pre>
+      </div>
+
+      <p class="section-label">📋 Reason</p>
+      <div class="reason-card">
+        <div><strong>Source of truth:</strong></div>
+        <ul class="src-list">
+          ${r.sources.map((s, si) => renderSource(s, si)).join("")}
+        </ul>
+        <div class="llm-flag ${llmCls}"><span class="ico">${llmIco}</span>${llmTxt}</div>
+      </div>
+
+      <p class="hint">Tags above are color-coded by category — solid = execution type (AI / Deterministic), tinted = source of truth, orange/teal = generation tool.</p>
+    `;
+    // Toggle Blueprint line extracts
+    document.querySelectorAll(".bp-line").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const pre = document.getElementById("bp-" + btn.dataset.src);
+        const open = pre.hidden;
+        pre.hidden = !open;
+        btn.setAttribute("aria-expanded", String(open));
+      });
+    });
+  }
+
+  function select(i) {
+    document.querySelectorAll(".rule-row").forEach(r => r.classList.toggle("active", +r.dataset.idx === i));
+    renderReview(i);
+  }
+
+  renderList();
+  select(0);
+</script>
+</body>
+</html>
